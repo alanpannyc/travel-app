@@ -14,6 +14,8 @@ from collections import defaultdict
 import utils  
 from datetime import datetime
 import CommuterRailPublisher
+import application
+
 
 def publisher():
   ## this implements Server Sent Events protocol
@@ -51,7 +53,12 @@ def publisher():
             
             CommuterRailPublisher.updateSchedule(prediction)
             
-            model.EventManager.event.set()
+            
+         
+            application.eventManager.notifyAll("commuterrailevents") 
+
+
+            
             gevent.sleep(config.POLLING_INTERVAL)
 
        

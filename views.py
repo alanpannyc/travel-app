@@ -7,6 +7,9 @@ import views
 import datetime
 import logging
 
+
+
+
 def not_found(environ, start_response):
   
     rawOutput="""<html><h1>Page not Found</h1><p>
@@ -23,8 +26,9 @@ def not_found(environ, start_response):
     yield rawOutputBytes
 
 
-  
+   
 def subscriber(environ, start_response):
+
     logging.debug ("VIEWS SUBSCRIBER environ="+str(environ))
     
     status = '200 OK'
@@ -37,7 +41,8 @@ def subscriber(environ, start_response):
             
   
     start_response(status, headers)
-  
+
+    
     while True:
         try:
 
@@ -66,7 +71,7 @@ def subscriber(environ, start_response):
     
 
         except Exception:
-            pass
+            pass 
     
 def home(environ, start_response):
    

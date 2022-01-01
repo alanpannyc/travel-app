@@ -22,7 +22,7 @@ try:
 except:
     from gevent.lock import BoundedSemaphore
 import model
-
+import application
 
 def parsePredictedSchedules(json_result):
         
@@ -273,8 +273,10 @@ def publisher():
                   
             
         # the below sends signal to the reader Greenlet
-        model.EventManager.event.set()
+         
+        application.eventManager.notifyAll("commuterrailevents") 
 
+        
         # this writer Greenlet will yield to the reader Greenlet
         gevent.sleep(config.POLLING_INTERVAL)
 
