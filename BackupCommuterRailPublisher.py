@@ -17,6 +17,7 @@ import CommuterRailPublisher
 
 def publisher():
   ## this implements Server Sent Events protocol
+  ## this is Asynchronous notifications from MBTA server
   
   conn = httplib.HTTPSConnection(config.STREAM_URL)
   

@@ -23,10 +23,9 @@ except:
     from gevent.lock import BoundedSemaphore
 import model
 
-def updateSchedule(json_result):
-         
-        model.EventManager.lock.acquire(blocking=True, timeout=None)
- 
+
+def parsePredictedSchedules(json_result):
+        
         
         for pos,val in enumerate(json_result["data"]):
  
@@ -68,7 +67,7 @@ def updateSchedule(json_result):
                   model.EventManager.schedules[(routeid, tripid) ].departuretime=(val["attributes"]["departure_time"] )
               
                                           
-                 
+def getTrainNumberAndDestination():                 
 
         ## we need to map tripnumber and stop id  to the (routeid,tripid) tuple key
         ## because we need to make a SINGLE http request for list of trip's trainnumber
@@ -81,17 +80,6 @@ def updateSchedule(json_result):
              tripnumber=tripObj.tripnumber
              tripnumberToRouteidTripid[tripnumber]=( routeid, tripid  )
              tripsurl=tripsurl+str(tripnumber)+","
-
-
-        stopidToRouteidTripid={}
-        stopsurl=config.STOPS+"?filter[id]="
-        
-        for (routeid, tripid) ,tripObj in model.EventManager.schedules.items():
-           stopid=tripObj.stop
-           
-           stopidToRouteidTripid[stopid]=(routeid, tripid)
-           
-           stopsurl=stopsurl+str(stopid)+","
         
         # SCHEDULES relationships trip data id maps to TRIPS attributes name==trainnumber
         # Note: the trainnumber below is DIFFERENT from vehicle number
@@ -105,7 +93,20 @@ def updateSchedule(json_result):
              model.EventManager.schedules[(routeid, tripid) ].trainnumber=val["attributes"]["name"]
     
              model.EventManager.schedules[(routeid, tripid) ].headsign=val["attributes"]["headsign"]
-             
+    
+
+
+def getAssigndTrackNumberFromPredictionsStopId():
+
+        stopidToRouteidTripid={}
+        stopsurl=config.STOPS+"?filter[id]="
+        
+        for (routeid, tripid) ,tripObj in model.EventManager.schedules.items():
+           stopid=tripObj.stop
+           
+           stopidToRouteidTripid[stopid]=(routeid, tripid)
+           
+           stopsurl=stopsurl+str(stopid)+","
                
         routeidToTrackNumber={}
         
@@ -125,7 +126,14 @@ def updateSchedule(json_result):
                     
                     routeidToTrackNumber[(routeid,trainnumber)]=val['attributes']['platform_code']
                
-             
+               
+        return routeidToTrackNumber
+
+ 
+def findNextTripsDepartingAndDisplay( routeidToTrackNumber):
+
+
+        
         #below gets up to date next departure times
         routeDepartureTimes=defaultdict(list)
         
@@ -135,6 +143,7 @@ def updateSchedule(json_result):
                    
        
         model.EventManager.finalResultForDisplay=[]
+        
         for routeid, listTripObjects in routeDepartureTimes.items():    
            orderedTripObjects=utils.orderedTripsByTimestamp(listTripObjects)
     
@@ -167,25 +176,37 @@ def updateSchedule(json_result):
 
               
 
+
+
+
+    
+def updateSchedule(json_result):
+         
+        model.EventManager.lock.acquire(blocking=True, timeout=None)
+
+        parsePredictedSchedules(json_result)
+ 
+           
+        getTrainNumberAndDestination()
+
+
+        routeidToTrackNumber=getAssigndTrackNumberFromPredictionsStopId()
+             
+
+        findNextTripsDepartingAndDisplay( routeidToTrackNumber)
+
         
 
         model.EventManager.lock.release()
 
     
-        
-
-def publisher():
-
-
-  
-    
-    while True:
+def getSchedule():
         
         
         model.EventManager.lock.acquire(blocking=True, timeout=None)
  
         
-        json_result=model.EventManager.mbtaStream.getData(config.SCHEDULES)
+        json_result=model.EventManager.mbtaStream.getData(config.COMMUTERRAIL_SCHEDULES)
         
         for pos,val in enumerate(json_result["data"]):
   
@@ -232,8 +253,22 @@ def publisher():
         
 
         model.EventManager.lock.release()
+
+    
+
+def publisher():
+
+
+  
+    
+    while True:
+        # get static daily schedule
+        getSchedule()
+
         
-        json_result=model.EventManager.mbtaStream.getData(config.PREDICTIONS)
+        # get predictions which are changes to schedule(updates status or departure time or
+        # stop id which is same as track number
+        json_result=model.EventManager.mbtaStream.getData(config.COMMUTERRAIL_PREDICTIONS)
         updateSchedule(json_result)
                   
             

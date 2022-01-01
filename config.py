@@ -4,9 +4,9 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s', dat
 ASYNCHRONOUS_NOTIFICATION_ONLY=False
  
   
-PREDICTIONS='https://api-v3.mbta.com/predictions?filter[stop]=place-north&filter[route_type]=2'
+COMMUTERRAIL_PREDICTIONS='https://api-v3.mbta.com/predictions?filter[stop]=place-north&filter[route_type]=2'
 
-SCHEDULES='https://api-v3.mbta.com/schedules?filter[stop]=place-north&filter[route_type]=2'
+COMMUTERRAIL_SCHEDULES='https://api-v3.mbta.com/schedules?filter[stop]=place-north&filter[route_type]=2'
 
 TRIPS='https://api-v3.mbta.com/trips/'
 
