@@ -26,7 +26,7 @@ TRIP_LIFESPAN=120
 
 STREAM_URL="api-v3.mbta.com"
  
-API_KEY="ed3aa4403d454a92933f08747edcadcf"
+API_KEY=""
 
 
 STREAM_URL_SUFFIX="/predictions/?filter[stop]=place-north&filter[route_type]=2"
