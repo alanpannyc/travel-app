@@ -27,8 +27,9 @@ class MBTAStream:
               import traceback
               logging.error("Exception caught:"+str(sys.exc_info() )  )
               logging.error(traceback.format_exc())
-              
-              gevent.sleep(POLLING_INTERVAL)
+              import gevent
+              import config
+              gevent.sleep(config.POLLING_INTERVAL)
        
 
 # trips =list of Trip objects with Trip.departuretime as string time stamps in YYYY-MM-DDTHH:MM:SS format

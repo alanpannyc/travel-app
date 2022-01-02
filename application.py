@@ -36,7 +36,7 @@ def make_app(environ, start_response):
   
        start_response(status, headers)
        
-       return eventManager.subscribe("commuterrailevents",environ, start_response)
+       return eventManager.subscribe("commuterrailevents")
 
    elif environ['PATH_INFO'] == '/subwayevents':
     
@@ -51,8 +51,8 @@ def make_app(environ, start_response):
   
        start_response(status, headers)
        
-       return eventManager.subscribe("subwayevents"  ,environ, start_response)
-       
+       return eventManager.subscribe("subwayevents" )
+        
           
    return views.not_found(environ, start_response)
 

@@ -58,10 +58,10 @@ class EventManager(object):
             
           self.events[subject].set()
         
-    def subscribe(self,subject,environ, start_response ):
+    def subscribe(self,subject):
 
       logging.debug ("models SUBSCRIBE environ="+str(environ))
-                    
+                     
 
       while True:
         try:
@@ -90,12 +90,21 @@ class EventManager(object):
                self.events[subject].wait()
             else:
                 #handle this gracefully and go to sleep
+                logging.error("subject not found in events:"+str(subject) )
                 gevent.sleep(config.POLLING_INTERVAL)
             
 
-        except Exception:
-            pass
-       
+        
+        except BaseException as ex:
+              import sys
+              import config
+              import logging
+              import traceback
+              logging.error("Exception caught:"+str(sys.exc_info() )  )
+              logging.error(traceback.format_exc())
+              import gevent
+              import config
+              gevent.sleep(config.POLLING_INTERVAL)       
   
         
 class Trip:
@@ -117,8 +126,10 @@ class Trip:
         self.tripidAsKey=None
         self.event=Event()
         def releaseMemory():
+          try:
+            import logging  
             if self.departuretime is None:
-        
+                import config
                 self.event.clear()
                 self.event.wait(config.TRIP_LIFESPAN)
                 
@@ -141,7 +152,7 @@ class Trip:
                 
               # keep checking current time to see if this Trip has already happened:  
               while True:
-        
+                import config
                 self.event.clear()
                 self.event.wait(config.TRIP_LIFESPAN)
                 
@@ -163,7 +174,13 @@ class Trip:
                    EventManager.lock.release()
                    return
  
-            
+          except BaseException as ex:
+              import sys
+              import config
+              import logging
+              import traceback
+              logging.error("Exception caught:"+str(sys.exc_info() )  )
+              logging.error(traceback.format_exc())    
         gevent.spawn(releaseMemory)
 
 EventManager.schedules=defaultdict(Trip)
