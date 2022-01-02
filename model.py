@@ -22,6 +22,7 @@ except:
     from gevent.lock import BoundedSemaphore
 
 import CommuterRailPublisher    
+import SubwayPublisher
 
 #
 #  the Observer Design Pattern 
@@ -31,7 +32,7 @@ class EventManager(object):
     schedules=None 
     
     mbtaStream=utils.MBTAStream()
-    finalResultForDisplay=[]
+    finalResultForDisplay=defaultdict(list)
     lock=BoundedSemaphore(1)
     event=Event()
     
@@ -42,9 +43,13 @@ class EventManager(object):
         self.events["subwayevents"]=Event()
         self.publisher=[]
         
-    def publishAll(self):    
+    def publishAll(self):
+        
         self.publisher.append(CommuterRailPublisher.publisher)
         gevent.spawn(CommuterRailPublisher.publisher)
+
+        self.publisher.append(SubwayPublisher.publisher)
+        gevent.spawn(SubwayPublisher.publisher)
 
         
     def notifyAll(self,subject):
@@ -56,18 +61,6 @@ class EventManager(object):
     def subscribe(self,subject,environ, start_response ):
 
       logging.debug ("models SUBSCRIBE environ="+str(environ))
-    
-      status = '200 OK'
-  
-    
-      headers = [('Content-Type', 'text/event-stream'),
-               ('Cache-Control', 'no-cache'),
-               ( 'Connection', 'keep-alive' ),
-               ]
-            
-  
-      start_response(status, headers)
-                
                     
 
       while True:
@@ -79,13 +72,15 @@ class EventManager(object):
             EventManager.lock.acquire(blocking=True, timeout=None)
                 
                                       
-            for row in EventManager.finalResultForDisplay:                              
+            for row in EventManager.finalResultForDisplay[subject]:                              
               
               rawOutput=rawOutput+str(  row ) +"<br>"           
 
             EventManager.lock.release()
-                 
-                
+            
+            #     
+            # Note that the below is actually the Server Sent Events protocol:
+            #
             yield bytes("retry: 3000\n"+ "data: %s\n\n" % json.dumps( rawOutput) ,encoding='utf-8'  )
         
             if subject in self.events:

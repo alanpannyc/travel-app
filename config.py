@@ -2,11 +2,16 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 ASYNCHRONOUS_NOTIFICATION_ONLY=False
- 
+  
   
 COMMUTERRAIL_PREDICTIONS='https://api-v3.mbta.com/predictions?filter[stop]=place-north&filter[route_type]=2'
 
+SUBWAY_PREDICTIONS='https://api-v3.mbta.com/predictions?filter[stop]=place-north&filter[route_type]=0,1'
+
+
 COMMUTERRAIL_SCHEDULES='https://api-v3.mbta.com/schedules?filter[stop]=place-north&filter[route_type]=2'
+
+SUBWAY_SCHEDULES='https://api-v3.mbta.com/schedules?filter[stop]=place-north&filter[route_type]=0,1'
 
 TRIPS='https://api-v3.mbta.com/trips/'
 
@@ -19,6 +24,9 @@ POLLING_INTERVAL=30
 PARENT_STATION="BNT-0000"
 
 ROUTE_TYPE_PREFIX="CR-"
+
+
+SUBWAY_ROUTE_TYPE_PREFIX="prediction-"
 
 
 

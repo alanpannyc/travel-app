@@ -5,7 +5,9 @@ import model
 import logging
 
 import gevent
-from gevent.queue import Queue, Empty
+
+
+
 import simplejson as json
 from gevent.event import Event
 import urllib.request as mbtaStream
@@ -20,25 +22,46 @@ import application
 def publisher():
   ## this implements Server Sent Events protocol
   ## this is Asynchronous notifications from MBTA server
+  ## this is retrieving Commuter Rail Events
+  while True:  
+    try:
+      conn = httplib.HTTPSConnection(config.STREAM_URL)
   
-  conn = httplib.HTTPSConnection(config.STREAM_URL)
-  
-  eventStreamHeaders={"accept": "text/event-stream" , "x-api-key": config.API_KEY}
+      eventStreamHeaders={"accept": "text/event-stream" , "x-api-key": config.API_KEY}
 
-
-  conn.request(method="GET", url=config.STREAM_URL_SUFFIX,headers=eventStreamHeaders)
-
+      conn.request(method="GET", url=config.STREAM_URL_SUFFIX,headers=eventStreamHeaders)
  
-  response = conn.getresponse()
+      response = conn.getresponse()
 
+    except BaseException as ex:
+      import sys
+      import config
+      import logging
+      import traceback
+
+      logging.error("Exception caught:"+str(sys.exc_info() )  )
+      logging.error(traceback.format_exc())
+
+      import gevent
+      import config
+     
+      gevent.sleep(config.POLLING_INTERVAL)
+    
+    else:
+     
+      break
+
+   
   i=0
   result=[]
   while True:
-    data = response.fp.readline()
+    try:
+    
+      data = response.fp.readline()
    
-    result.append(str(data))
+      result.append(str(data))
   
-    if i>0:
+      if i>0:
         # if we receive updated prediction or new prediction         
         if result[i-1].find("event: update")!=-1 or result[i-1].find("event: add")!=-1:
           
@@ -62,6 +85,16 @@ def publisher():
             gevent.sleep(config.POLLING_INTERVAL)
 
        
-    i=i+1
+      i=i+1
+    except BaseException as ex:
+      import sys
+      import config
+      import logging
+      import traceback
+
+      logging.error("Exception caught:"+str(sys.exc_info() )  )
+      logging.error(traceback.format_exc())
+  
+
 if __name__=="__main__":
     publisher() 

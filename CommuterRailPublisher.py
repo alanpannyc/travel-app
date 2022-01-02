@@ -4,7 +4,6 @@ gevent.monkey.patch_socket()
 
 
 import gevent
-from gevent.queue import Queue, Empty
 
 import simplejson as json
  
@@ -41,8 +40,10 @@ def parsePredictedSchedules(json_result):
                   
                   logging.debug (  "("+str(routeid)+","+str( tripid)+") not in model.EventManager.schedules...adding stop from PREDICTIONS")
                   logging.debug ( "PREDICTIONS not found in SCHEDULES="+str(val))
-                  # when track number is assigned, this will update with a new record that has tripid=original tripid + parent station id+platform code(tracknumber)
+                  # when track number is assigned, this will update with a new record that has
+                  #json[data][id]= "tripid"=original tripid + parent station id+platform code(tracknumber)
                   # however it will have departure_time ==None  most of the time
+                  # so the below stop id is saved so we can send http request with stop id and receive track number as response
                   model.EventManager.schedules[(routeid, tripid) ].stop=val['relationships']['stop']['data']['id']
 
                                           
@@ -81,7 +82,7 @@ def getTrainNumberAndDestination():
              tripnumberToRouteidTripid[tripnumber]=( routeid, tripid  )
              tripsurl=tripsurl+str(tripnumber)+","
         
-        # SCHEDULES relationships trip data id maps to TRIPS attributes name==trainnumber
+        # SCHEDULES relationships trip data id maps to TRIPS attributes name which is used to send http request with trip and receive trainnumber as response
         # Note: the trainnumber below is DIFFERENT from vehicle number
         
         json_result=model.EventManager.mbtaStream.getData(tripsurl)
@@ -132,6 +133,8 @@ def getAssigndTrackNumberFromPredictionsStopId():
  
 def findNextTripsDepartingAndDisplay( routeidToTrackNumber):
 
+    
+        model.EventManager.finalResultForDisplay["commuterrailevents"]=[]
 
         
         #below gets up to date next departure times
@@ -142,10 +145,10 @@ def findNextTripsDepartingAndDisplay( routeidToTrackNumber):
  
                    
        
-        model.EventManager.finalResultForDisplay=[]
+   
         
         for routeid, listTripObjects in routeDepartureTimes.items():    
-           orderedTripObjects=utils.orderedTripsByTimestamp(listTripObjects)
+           orderedTripObjects=utils.orderedTripsByTimestamp(listTripObjects,config.ROUTE_TYPE_PREFIX )
     
            utils.cleanUpMemory(orderedTripObjects)
 
@@ -160,7 +163,7 @@ def findNextTripsDepartingAndDisplay( routeidToTrackNumber):
 
            if nextTrip and nextTrip.headsign:    
               logging.debug ("routeid:"+str(routeid)+" destination:"+str(nextTrip.headsign)+  " next departure:"+str(nextTrip.departuretime)+" status:"+str(nextTrip.status)+" trainnumber:"+str(nextTrip.trainnumber)+" tracknumber:"+str(nextTrip.tracknumber))
-              model.EventManager.finalResultForDisplay.append( ("routeid:",routeid," destination:",nextTrip.headsign,  " next departure:",nextTrip.departuretime," status:",nextTrip.status," trainnumber:",nextTrip.trainnumber," tracknumber:",nextTrip.tracknumber)   )
+              model.EventManager.finalResultForDisplay["commuterrailevents"].append( ("routeid:",routeid," destination:",nextTrip.headsign,  " next departure:",nextTrip.departuretime," status:",nextTrip.status," trainnumber:",nextTrip.trainnumber," tracknumber:",nextTrip.tracknumber)   )
 
 
            if  nextnextTrip :
@@ -172,7 +175,7 @@ def findNextTripsDepartingAndDisplay( routeidToTrackNumber):
 
            if  nextnextTrip and nextnextTrip.headsign :    
               logging.debug ("routeid:"+str(routeid)+ " destination:"+str(nextnextTrip.headsign)+ " next departure:"+str(nextnextTrip.departuretime)+" status:"+str(nextnextTrip.status)+" trainnumber:"+str(nextnextTrip.trainnumber)+" tracknumber:"+str(nextnextTrip.tracknumber))
-              model.EventManager.finalResultForDisplay.append(  ("routeid:",routeid, " destination:",nextnextTrip.headsign, " next departure:",nextnextTrip.departuretime," status:",nextnextTrip.status," trainnumber:",nextnextTrip.trainnumber," tracknumber:",nextnextTrip.tracknumber) )
+              model.EventManager.finalResultForDisplay["commuterrailevents"].append(  ("routeid:",routeid, " destination:",nextnextTrip.headsign, " next departure:",nextnextTrip.departuretime," status:",nextnextTrip.status," trainnumber:",nextnextTrip.trainnumber," tracknumber:",nextnextTrip.tracknumber) )
 
               
 
@@ -262,24 +265,38 @@ def publisher():
   
     
     while True:
-        # get static daily schedule
-        getSchedule()
+
+        try:
+        
+          # get static daily schedule
+          getSchedule()
 
         
-        # get predictions which are changes to schedule(updates status or departure time or
-        # stop id which is same as track number
-        json_result=model.EventManager.mbtaStream.getData(config.COMMUTERRAIL_PREDICTIONS)
-        updateSchedule(json_result)
+          # get predictions which are changes to schedule(updates status or departure time or
+          # stop id which is same as track number
+          import config
+          json_result=model.EventManager.mbtaStream.getData(config.COMMUTERRAIL_PREDICTIONS)
+          updateSchedule(json_result)
                   
             
-        # the below sends signal to the reader Greenlet
-         
-        application.eventManager.notifyAll("commuterrailevents") 
+          # the below sends signal to the reader Greenlet
+          # to unblock from gevent.Event.wait()         
+          application.eventManager.notifyAll("commuterrailevents") 
+        except BaseException as ex:
+          import sys
+          import config
+          import logging
+          import traceback
 
+          logging.error("Exception caught:"+str(sys.exc_info() )  )
+          logging.error(traceback.format_exc())
+
+        # if we have exceptions we retry in case it is incorrectly formatted json
         
         # this writer Greenlet will yield to the reader Greenlet
         gevent.sleep(config.POLLING_INTERVAL)
 
+        #note: below will have try /except block inside the publisher()
         if config.ASYNCHRONOUS_NOTIFICATION_ONLY: 
             import BackupCommuterRailPublisher
             # the below will only query for trainnumber and tracknumber if there is asynchronous update of stop id

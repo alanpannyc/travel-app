@@ -18,21 +18,26 @@ class MBTAStream:
          
               json_result=json.loads(result)
         
-              return json_result  
+              return json_result
+          
           except BaseException as ex:
-             import sys
-             logging.debug("Exception caught in reading"+str(sys.exc_info()[1]))
-             
-             gevent.sleep(POLLING_INTERVAL)
+              import sys
+              import config
+              import logging
+              import traceback
+              logging.error("Exception caught:"+str(sys.exc_info() )  )
+              logging.error(traceback.format_exc())
+              
+              gevent.sleep(POLLING_INTERVAL)
        
 
 # trips =list of Trip objects with Trip.departuretime as string time stamps in YYYY-MM-DDTHH:MM:SS format
-def orderedTripsByTimestamp(trips):
+def orderedTripsByTimestamp(trips, transitType):
   
 
   tripObjects=[]      
   for tripObj in trips:
-    if tripObj is not None:
+    if tripObj is not None and tripObj.tripidAsKey is not None and tripObj.tripidAsKey.find(transitType)!=-1:
         
         if tripObj.departuretime is not None:
             tripObj.departuretime=tripObj.departuretime[:19]#truncate to nearest second

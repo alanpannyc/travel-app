@@ -1,5 +1,5 @@
 import gevent
-from gevent.queue import Queue, Empty
+
 import simplejson as json
 from gevent.event import Event
 import model
@@ -27,53 +27,8 @@ def not_found(environ, start_response):
 
 
    
-def subscriber(environ, start_response):
-
-    logging.debug ("VIEWS SUBSCRIBER environ="+str(environ))
     
-    status = '200 OK'
-  
-    
-    headers = [('Content-Type', 'text/event-stream'),
-               ('Cache-Control', 'no-cache'),
-               ( 'Connection', 'keep-alive' ),
-               ]
-            
-  
-    start_response(status, headers)
-
-    
-    while True:
-        try:
-
-            rawOutput=""        
-            
-            
-            
-            model.EventManager.lock.acquire(blocking=True, timeout=None)
-            
-            for row in model.EventManager.finalResultForDisplay:
-              
-              rawOutput=rawOutput+str(  row ) +"<br>"           
-
-            model.EventManager.lock.release()
-              
-            
-
-            
-            yield bytes("retry: 3000\n"+ "data: %s\n\n" % json.dumps( rawOutput) ,encoding='utf-8'  )
-         
-
-            model.EventManager.event.clear()
-            
-            model.EventManager.event.wait()
-            
-    
-
-        except Exception:
-            pass 
-    
-def home(environ, start_response):
+def home_commuter_rail(environ, start_response):
    
     rawOutput="""<!DOCTYPE html>
             <html>
@@ -83,9 +38,9 @@ def home(environ, start_response):
               <body>
 
                 <script>
-                   var source = new EventSource('/events');
+                   var source = new EventSource('/commuterrailevents');
                    source.onmessage = function(e) {
-                     document.body.innerHTML = e.data + '<br>';
+                     document.body.innerHTML = '<h1>North Station</h1><br><h3>Massachusetts Bay Transit Authority Commuter Rail</h3><br>'+ e.data + '<br>';
                    };
                 </script>
               </body>
@@ -96,7 +51,35 @@ def home(environ, start_response):
     length=len(rawOutputBytes)
     
     start_response('200 OK', [('content-type','text/html'),])
-                                    ### ('content-length',str(length) ),('char-set','utf-8')])
+                                    
+   
+    yield rawOutputBytes
+
+    
+def home_subway(environ, start_response):
+   
+    rawOutput="""<!DOCTYPE html>
+            <html>
+              <head>
+                 <meta charset="utf-8" />
+              </head>
+              <body>
+
+                <script>
+                   var source = new EventSource('/subwayevents');
+                   source.onmessage = function(e) {
+                     document.body.innerHTML = '<h1>North Station</h1><br><h3>Massachusetts Bay Transit Authority Subway</h3><br>'+ e.data + '<br>';
+                   };
+                </script>
+              </body>
+            </html>"""  
+              
+    rawOutputBytes= bytes(  rawOutput ,encoding='utf-8'  )
+    
+    length=len(rawOutputBytes)
+    
+    start_response('200 OK', [('content-type','text/html'),])
+                                    
    
     yield rawOutputBytes
 
