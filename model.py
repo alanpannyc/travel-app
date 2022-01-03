@@ -60,7 +60,6 @@ class EventManager(object):
         
     def subscribe(self,subject):
 
-      logging.debug ("models SUBSCRIBE environ="+str(environ))
                      
 
       while True:
