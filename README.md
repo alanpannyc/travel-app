@@ -18,28 +18,14 @@ given its Python and its clear we need concurrency and given many asynchronous n
 Greenlet strategy avoids overhead of context switching and system scheduler compared with multithreading.
 The Greenlet strategy uses less memory (does not use stack space) and avoids latency of copying large argument data to stack space as in C++/JAVA multithreading.
 Finally, the Greenlets can never be suspended at arbitrary times so in theory you can get away
-with fewer locks and mutexes because greenlet execution  context switching is deterministic so in theory you can calculate when different greenlets will suspend and resume and avoid locks which might increase throughput. (I did not do this  so it is a potential area for
+with fewer locks and mutexes because greenlet execution  context switching is deterministic so in theory you can calculate when different greenlets will suspend and resume and avoid locks which might increase throughput. (I did not yet do this  so it is a potential area for
 improvement if speed is required).Note that multiple Greenlets all execute in single thread due to the GIL so for scalability we could increase the number of processes (each process has one thread running multiple greenlets)
 
 The UI was simply an EventSource js object which communicates with Server Sent Events protocol( a node.js concept)
 which should run on most browsers except for IE. if IE support is important then I would probably implement 
-web sockets protocol using geventwebsocket.handler using same gevents.pywsgiwhich I did not implement)
+web sockets protocol using geventwebsocket.handler using same gevents.pywsgi (which I did not yet implement)
 
-Alternative Different Solutions:(which I did not implement)
-
-(1)Besides for Greenlets there are other different frameworks like libevent , Twisted,libuv, nodejs that
-also try to defer network I/O to a single place(event loop) but they share same execution context and 
-they calculate where to call back code using the "closure property" instead of know where coroutines got suspended earlier.
-
-(2) the background scheduled processing and web servers interested in the output of background processing is
-a well known framework:  Celery does some background processing and forwards results to a broker like Rabbit MQ or Redis
-which in turn forwards to a separate web server app.
-
-(3) in python implement the background processing using BackgroundScheduler in package apscheduler
-
-(4)separate process retrieves commuter rail traffic info and writes to database and webserver retrieves 
-
-(5) websockets UI
+ 
 
 
 
